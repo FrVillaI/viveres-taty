@@ -9,10 +9,12 @@ import DeudasMainScreen from '../screens/deudas/DeudasMainScreen';
 import DetalleDeudaScreen from '../screens/deudas/DetalleDeudaScreen';
 import EditarDuedaScreen from '../screens/deudas/EditarDuedaScreen';
 import NuevaDuedaScreen from '../screens/deudas/NuevaDuedaScreen';
-import NuevoDuedorScreen from '../screens/deudas/NuevoDuedorScreen';
 import PedidosMainScreen from '../screens/pedidos/PedidosMainScreen';
 import ConsideracionesMainScreen from '../screens/consideraciones/ConsideracionesMainScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
+import DetalleProductosScreen from '../screens/productos/DetalleProductosScreen';
+import EditarProductosScreen from '../screens/productos/EditarProductosScreen';
+import NuevoProductoScreen from '../screens/productos/NuevoProductoScreen';
 
 
 
@@ -23,7 +25,10 @@ const Tab = createBottomTabNavigator();
 function ProductosStack() {
     return (
         <Stack.Navigator>
-            <Stack.Screen name="ProductosMain" component={ProductosMainScreen} />
+            <Stack.Screen name="ProductosMain" component={ProductosMainScreen} options={{ headerShown: false }}/>
+            <Stack.Screen name="DetalleProductos" component={DetalleProductosScreen} />
+            <Stack.Screen name="EditarProducto" component={EditarProductosScreen} />
+            <Stack.Screen name="NuevoProducto" component={NuevoProductoScreen} />
         </Stack.Navigator>
     );
 }
