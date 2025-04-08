@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { db } from "../../firebase/firebaseConfig";
 import { ref, update } from "firebase/database";
 import * as ImagePicker from 'expo-image-picker';
+import { API_CLOUDINARY, CLOUDINARY_UPLOAD_PRESET } from '@env';
 
 const EditarProductosScreen = ({ navigation, route }: any) => {
   const { productoE } = route.params || {};
@@ -11,6 +12,8 @@ const EditarProductosScreen = ({ navigation, route }: any) => {
   const [nombre, setNombre] = useState("");
   const [precio, setPrecio] = useState("");
   const [imagen, setImagen] = useState("");
+  const [imagenLocal, setImagenLocal] = useState("");
+
 
   useEffect(() => {
     if (productoE) {
@@ -31,30 +34,75 @@ const EditarProductosScreen = ({ navigation, route }: any) => {
   
     if (!result.canceled) {
       const uri = result.assets[0].uri;
-      setImagen(uri); // ✅ Actualiza la imagen en la vista previa
-      subirACloudinary(uri);
+      setImagen(uri); // Para mostrar en vista previa
+      setImagenLocal(uri); // Para saber que esta imagen aún no ha sido subida
     }
   };
   
 
-  const subirACloudinary = async (imagenUri: string) => {
-    console.log("subir imagen");
+
+  const subirACloudinary = async (imagenUri: string): Promise<string | null> => {
+    const data = new FormData();
+  
+    data.append("file", {
+      uri: imagenUri,
+      type: "image/jpeg",
+      name: "foto.jpg",
+    } as any);
+  
+    data.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+  
+    try {
+      const response = await fetch(API_CLOUDINARY, {
+        method: "POST",
+        body: data,
+      });
+  
+      const result = await response.json();
+  
+      if (result.secure_url) {
+        return result.secure_url;
+      } else {
+        console.log("Error al subir imagen:", result);
+        return null;
+      }
+    } catch (error) {
+      console.error("Error al subir imagen:", error);
+      return null;
+    }
   };
   
 
-  const guardarCambios = () => {
-    if (!nombre || !precio || !imagen) {
+  const guardarCambios = async () => {
+    if (!nombre || !precio) {
       Alert.alert("Error", "Por favor, completa todos los campos.");
       return;
     }
-
+  
+    let imagenFinal = imagen;
+  
+    // Si hay una imagen nueva local, súbela primero
+    if (imagenLocal) {
+      try {
+        const urlSubida = await subirACloudinary(imagenLocal);
+        if (!urlSubida) {
+          Alert.alert("Error", "No se pudo subir la imagen. Intenta nuevamente.");
+          return;
+        }
+        imagenFinal = urlSubida;
+      } catch (error) {
+        Alert.alert("Error", "Error al subir la imagen.");
+        return;
+      }
+    }
+  
     const productoRef = ref(db, `productos/${id}`);
     const updatedData = {
       nombre: nombre,
       precio: parseFloat(precio),
-      imagen: imagen,
+      imagen: imagenFinal,
     };
-
+  
     update(productoRef, updatedData)
       .then(() => {
         Alert.alert("Éxito", "El producto ha sido actualizado correctamente.");
@@ -65,6 +113,7 @@ const EditarProductosScreen = ({ navigation, route }: any) => {
         console.error("Error al actualizar el producto:", error);
       });
   };
+  
 
   return (
     <View style={styles.container}>

@@ -3,6 +3,9 @@ import React, { useState } from 'react';
 import { db } from "../../firebase/firebaseConfig";
 import { ref, push } from "firebase/database";
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
+import mime from 'mime';
+import { API_CLOUDINARY,CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '@env';
 
 
 const NuevoProductoScreen = ({ navigation }: any) => {
@@ -18,9 +21,41 @@ const NuevoProductoScreen = ({ navigation }: any) => {
       quality: 1,
     });
 
+
     if (!result.canceled) {
-      setImagen(result.assets[0].uri);
-      // Aquí puedes llamar a una función para subir la imagen a Cloudinary o Firebase Storage
+      const uri = result.assets[0].uri;
+      const url = await subirImagenACloudinary(uri);
+      if (url) {
+        setImagen(url);
+      } else {
+        Alert.alert("Error", "No se pudo subir la imagen.");
+      }
+    }
+  };
+
+  const subirImagenACloudinary = async (imagenUri: string): Promise<string | null> => {
+    const data = new FormData();
+    const archivo = {
+      uri: imagenUri,
+      type: mime.getType(imagenUri) || "image/jpeg",
+      name: imagenUri.split("/").pop(),
+    };
+  
+    data.append("file", archivo as any);
+    data.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+    data.append("cloud_name", CLOUDINARY_CLOUD_NAME); 
+  
+    try {
+      const res = await fetch(API_CLOUDINARY, {
+        method: "POST",
+        body: data,
+      });
+  
+      const json = await res.json();
+      return json.secure_url;
+    } catch (error) {
+      console.error("Error al subir imagen:", error);
+      return null;
     }
   };
 
