@@ -81,8 +81,8 @@ function MainTabs() {
                         iconName = focused ? 'cash' : 'cash-outline';
                     } else if (route.name === 'Pedidos') {
                         iconName = focused ? 'receipt' : 'receipt-outline';
-                    } else if (route.name === 'Consideraciones') {
-                        iconName = focused ? 'time' : 'time-outline';
+                    } else if (route.name === 'Abastecimiento') {
+                        iconName = focused ? 'cube' : 'cube-outline';
                     }
 
                     return <Ionicons name={iconName} size={size} color={color} />;
@@ -94,7 +94,7 @@ function MainTabs() {
             <Tab.Screen name="Productos" component={ProductosStack} options={{ headerShown: false }} />
             <Tab.Screen name="Deudas" component={DeudasStack} options={{ headerShown: false }} />
             <Tab.Screen name="Pedidos" component={PedidosStack} options={{ headerShown: false }}/>
-            <Tab.Screen name="Consideraciones" component={ConsideracionesStack} options={{ headerShown: false }}/>
+            <Tab.Screen name="Abastecimiento" component={ConsideracionesStack} options={{ headerShown: false }}/>
         </Tab.Navigator>
     );
 }
