@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginVertical: 20,
     color: "#333",
-    marginTop: 40
+    marginTop: 30
   },
   searchContainer: {
     flexDirection: "row",

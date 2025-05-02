@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginVertical: 20,
     color: "#333",
-    marginTop: 15,
+    marginTop: 10,
   },
   searchContainer: {
     flexDirection: "row",
@@ -198,7 +198,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     margin: 8,
-    width: "100%",
     alignItems: "flex-start",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
