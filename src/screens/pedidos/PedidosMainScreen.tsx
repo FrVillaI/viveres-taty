@@ -1,9 +1,11 @@
 import { StyleSheet, Text, View, FlatList, Switch, TouchableOpacity, Modal, Button, Alert } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import { getDatabase, ref, onValue, update, push } from 'firebase/database';
+import { ref, onValue, update, push } from 'firebase/database';
 import { AntDesign } from '@expo/vector-icons';
 import { TextInput } from 'react-native-gesture-handler';
 import { db } from '../../firebase/firebaseConfig';
+import DateTimePicker from '@react-native-community/datetimepicker';
+
 
 interface Pedidos {
   id: string;
@@ -29,12 +31,18 @@ const PedidosMainScreen = ({ navigation }: any) => {
 
   const [newproveedor, setproverdor] = useState("");
   const [newfecha, setfecha] = useState("");
-  const [newconfirmacionEntrega, setconfirmacionEntrega] = useState("");
+  const [newconfirmacionEntrega, setconfirmacionEntrega] = useState(false);
   const [newproductos, setnewproductos] = useState<Productos[]>([]);
 
   const [newnombre, setnewnombre] = useState("");
-  const [newprecio, setnewprecio] = useState(0);
-  const [newcantidad, setnewcantidad] = useState(0)
+  const [newprecio, setnewprecio] = useState('');
+  const [newcantidad, setnewcantidad] = useState('');
+
+  const [modalConfirmarEliminarVisible, setModalConfirmarEliminarVisible] = useState(false);
+  const [productoAEliminar, setProductoAEliminar] = useState<Productos | null>(null);
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
 
   useEffect(() => {
     const pedidosRef = ref(db, 'pedidos');
@@ -63,24 +71,28 @@ const PedidosMainScreen = ({ navigation }: any) => {
   };
 
   const agregarProducto = () => {
-    if (!newnombre || newprecio < 0 || newcantidad < 0) {
-      Alert.alert("Error", "Nombre y precio del producto son requeridos.");
+    const precio = parseFloat(newprecio);
+    const cantidad = parseInt(newcantidad, 10);
+
+    if (!newnombre || isNaN(precio) || isNaN(cantidad) || precio < 0 || cantidad < 0) {
+      Alert.alert("Error", "Nombre, precio y cantidad válidos son requeridos.");
       return;
     }
 
     const nuevoProducto: Productos = {
       id: Date.now().toString(),
       nombre: newnombre,
-      precioUnitario: newprecio,
-      cantidad: newcantidad
+      precioUnitario: precio,
+      cantidad: cantidad
     };
 
     setnewproductos([...newproductos, nuevoProducto]);
     setnewnombre("");
-    setnewprecio(0);
-    setnewcantidad(0);
+    setnewprecio("");
+    setnewcantidad("");
     setModalProductoVisible(false);
   };
+
 
   const guardarPedido = async () => {
     if (!newproveedor || !newfecha) {
@@ -91,7 +103,7 @@ const PedidosMainScreen = ({ navigation }: any) => {
     const nuevoPedido = {
       proveedor: newproveedor,
       fecha: newfecha,
-      confirmacionEntrega: newconfirmacionEntrega === "true",
+      confirmacionEntrega: newconfirmacionEntrega,
       productos: newproductos
     };
 
@@ -101,7 +113,7 @@ const PedidosMainScreen = ({ navigation }: any) => {
       setnewproductos([]);
       setproverdor("");
       setfecha("");
-      setconfirmacionEntrega("");
+      setconfirmacionEntrega(false);
     } catch (error) {
       Alert.alert("Error", "No se pudo guardar el pedido");
     }
@@ -123,6 +135,10 @@ const PedidosMainScreen = ({ navigation }: any) => {
       </View>
     </TouchableOpacity>
   );
+
+  const eliminarProducto = (id: any) => {
+    setnewproductos((prev) => prev.filter((p) => p.id !== id));
+  };
 
   return (
     <View style={styles.container}>
@@ -201,19 +217,28 @@ const PedidosMainScreen = ({ navigation }: any) => {
               onChangeText={(text) => setproverdor(text)}
             />
 
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Fecha"
-              value={newfecha}
-              onChangeText={(text) => setfecha(text)}
-            />
+            <TouchableOpacity
+              onPress={() => setShowDatePicker(true)}
+              style={styles.dateButton}
+            >
+              <Text style={styles.buttonText}>
+                {newfecha ? `Fecha: ${newfecha}` : "Seleccionar fecha"}
+              </Text>
+            </TouchableOpacity>
 
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Confirmacion entrega"
-              value={newconfirmacionEntrega}
-              onChangeText={(text) => setconfirmacionEntrega(text)}
-            />
+
+            <View style={styles.rowInput}>
+              <Text style={styles.label}>Confirmacion de entrega:</Text>
+              <TouchableOpacity
+                style={[
+                  styles.toggleButton,
+                  { backgroundColor: newconfirmacionEntrega ? "green" : "gray" },
+                ]}
+                onPress={() => setconfirmacionEntrega(!newconfirmacionEntrega)}
+              >
+                <Text style={styles.buttonText}>{newconfirmacionEntrega ? "Sí" : "No"}</Text>
+              </TouchableOpacity>
+            </View>
 
             <FlatList
               data={newproductos}
@@ -221,13 +246,18 @@ const PedidosMainScreen = ({ navigation }: any) => {
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={styles.productCard}
+                  onLongPress={() => {
+                    setProductoAEliminar(item);
+                    setModalConfirmarEliminarVisible(true);
+                  }}
+
                 >
                   <Text style={styles.productName}>{item.nombre}</Text>
                   <Text style={styles.productPrice}>${item.precioUnitario}</Text>
                 </TouchableOpacity>
               )}
-
             />
+
             <TouchableOpacity style={styles.addButton} onPress={() => setModalProductoVisible(true)}>
               <Text style={styles.buttonText}>Agregar Productos</Text>
             </TouchableOpacity>
@@ -245,6 +275,20 @@ const PedidosMainScreen = ({ navigation }: any) => {
         </View>
       </Modal>
 
+      {showDatePicker && (
+        <DateTimePicker
+          value={newfecha ? new Date(newfecha) : new Date()}
+          mode="date"
+          display="default"
+          onChange={(event, selectedDate) => {
+            setShowDatePicker(false);
+            if (selectedDate) {
+              const fechaFormateada = selectedDate.toISOString().split('T')[0];
+              setfecha(fechaFormateada);
+            }
+          }}
+        />
+      )}
 
       <Modal
         visible={modalProductoVisible}
@@ -262,21 +306,25 @@ const PedidosMainScreen = ({ navigation }: any) => {
               onChangeText={(text) => setnewnombre(text)}
             />
 
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Precio unitario"
-              keyboardType="numeric"
-              value={newprecio.toString()}
-              onChangeText={(text) => setnewprecio(parseFloat(text))}
-            />
+            <View style={styles.rowInput}>
+              <Text style={styles.label}>Precio Unitario:</Text>
+              <TextInput
+                style={[styles.modalInput, { flex: 1 }]}
+                keyboardType="decimal-pad"
+                value={newprecio}
+                onChangeText={(text) => setnewprecio(text)}
+              />
+            </View>
 
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Cantidad"
-              keyboardType="numeric"
-              value={newcantidad.toString()}
-              onChangeText={(text) => setnewcantidad(parseFloat(text))}
-            />
+            <View style={styles.rowInput}>
+              <Text style={styles.label}>Cantidad:</Text>
+              <TextInput
+                style={[styles.modalInput, { flex: 1 }]}
+                keyboardType="number-pad"
+                value={newcantidad}
+                onChangeText={(text) => setnewcantidad(text)}
+              />
+            </View>
 
             <TouchableOpacity style={styles.addButton} onPress={agregarProducto}>
               <Text style={styles.buttonText}>Guardar Producto</Text>
@@ -286,6 +334,40 @@ const PedidosMainScreen = ({ navigation }: any) => {
               <Text style={styles.buttonText}>Cerrar</Text>
             </TouchableOpacity>
 
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={modalConfirmarEliminarVisible}
+        animationType="fade"
+        transparent
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.cardTitle}>¿Eliminar producto?</Text>
+            <Text>{productoAEliminar?.nombre}</Text>
+
+            <View style={styles.modalButtons}>
+              <Button
+                title="Sí, eliminar"
+                onPress={() => {
+                  if (productoAEliminar) {
+                    eliminarProducto(productoAEliminar.id);
+                  }
+                  setProductoAEliminar(null);
+                  setModalConfirmarEliminarVisible(false);
+                }}
+                color="red"
+              />
+              <Button
+                title="Cancelar"
+                onPress={() => {
+                  setProductoAEliminar(null);
+                  setModalConfirmarEliminarVisible(false);
+                }}
+              />
+            </View>
           </View>
         </View>
       </Modal>
@@ -316,7 +398,7 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   fullList: {
-    marginBottom: 80,
+    marginBottom: 35,
   },
   card: {
     backgroundColor: '#FFFFFF',
@@ -392,7 +474,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
-    marginTop:8,
+    marginTop: 8,
   },
   productName: {
     fontSize: 16,
@@ -432,6 +514,32 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  rowInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  label: {
+    fontSize: 16,
+    marginRight: 8,
+    color: '#333',
+  },
+  toggleButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 10,
+    marginTop: 10
+  },
+  dateButton: {
+    backgroundColor: "#1976D2",
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 10,
+    alignItems: "center",
   },
 });
 

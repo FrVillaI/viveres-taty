@@ -15,7 +15,6 @@ import LoginScreen from '../screens/auth/LoginScreen';
 import DetalleProductosScreen from '../screens/productos/DetalleProductosScreen';
 import EditarProductosScreen from '../screens/productos/EditarProductosScreen';
 import NuevoProductoScreen from '../screens/productos/NuevoProductoScreen';
-import DetellaPedidosScreen from '../screens/pedidos/DetellaPedidosScreen';
 import EditarPedidosScreen from '../screens/pedidos/EditarPedidosScreen';
 
 
@@ -52,7 +51,6 @@ function PedidosStack() {
     return (
         <Stack.Navigator>
             <Stack.Screen name="PedidosMain" component={PedidosMainScreen} options={{ headerShown: false }}/>
-            <Stack.Screen name="DetallePedidos" component={DetellaPedidosScreen} />
             <Stack.Screen name="EditarPedidos" component={EditarPedidosScreen} />
         </Stack.Navigator>
     );
