@@ -1,11 +1,10 @@
 import { StyleSheet, Text, View, FlatList, Switch, TouchableOpacity, Modal, Button, Alert } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import { ref, onValue, update, push } from 'firebase/database';
+import { ref, onValue, update, push, remove } from 'firebase/database';
 import { AntDesign } from '@expo/vector-icons';
 import { TextInput } from 'react-native-gesture-handler';
 import { db } from '../../firebase/firebaseConfig';
 import DateTimePicker from '@react-native-community/datetimepicker';
-
 
 interface Pedidos {
   id: string;
@@ -140,6 +139,8 @@ const PedidosMainScreen = ({ navigation }: any) => {
     setnewproductos((prev) => prev.filter((p) => p.id !== id));
   };
 
+
+
   return (
     <View style={styles.container}>
 
@@ -179,7 +180,6 @@ const PedidosMainScreen = ({ navigation }: any) => {
                   renderItem={({ item }) => (
                     <TouchableOpacity
                       style={styles.productCard}
-                      onPress={() => navigation.navigate("DetalleProductos", { producto: item })}
                     >
                       <Text style={styles.productName}>{item.nombre}</Text>
                       <Text style={styles.productPrice}>${item.precioUnitario}</Text>
@@ -188,12 +188,44 @@ const PedidosMainScreen = ({ navigation }: any) => {
                 />
 
                 <View style={styles.modalButtons}>
-                  <Button title="Editar" onPress={() => {
+              <Button
+                title="Editar"
+                onPress={() => {
+                  if (pedidoSeleccionado) {
                     setPedidoSeleccionado(null);
-                    navigation.navigate("editarPedidos", { id: pedidoSeleccionado.id });
-                  }} />
-                  <Button title="Cerrar" onPress={() => setPedidoSeleccionado(null)} color="red" />
-                </View>
+                    navigation.navigate("EditarPedidos", { id: pedidoSeleccionado.id });
+                  }
+                }}
+              />
+              <Button
+                title="Eliminar"
+                onPress={() => {
+                  if (pedidoSeleccionado) {
+                    Alert.alert(
+                      "Confirmar eliminación",
+                      `¿Estás seguro de eliminar el pedido de ${pedidoSeleccionado.proveedor}?`,
+                      [
+                        { text: "Cancelar", style: "cancel" },
+                        {
+                          text: "Eliminar",
+                          style: "destructive",
+                          onPress: async () => {
+                            await remove(ref(db, `pedidos/${pedidoSeleccionado.id}`));
+                            setPedidoSeleccionado(null);
+                          },
+                        },
+                      ]
+                    );
+                  }
+                }}
+                color="red"
+              />
+              <Button
+                title="Cerrar"
+                onPress={() => setPedidoSeleccionado(null)}
+                color="gray"
+              />
+            </View>
               </>
             )}
           </View>
